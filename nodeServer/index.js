@@ -2,7 +2,10 @@
 
 const { Server } = require("socket.io");
 
-const io = new Server(8000, {
+// IMPORTANT: use dynamic port (for deployment)
+const PORT = process.env.PORT || 8000;
+
+const io = new Server(PORT, {
     cors: {
         origin: "*"
     }
@@ -11,25 +14,28 @@ const io = new Server(8000, {
 const users = {};
 
 io.on('connection', socket => {
-// if any new user join, let other user connected to the server know
+
+    // if any new user join, let other users know
     socket.on('new-user-joined', name => {
-        // console.log("New user:", name);
         users[socket.id] = name;
         socket.broadcast.emit('user-joined', name);
     });
-// if someone send the message , broadcast to all other people
-    socket.on('send', message => {
 
+    // if someone sends a message
+    socket.on('send', message => {
         socket.broadcast.emit('receive', {
             message: message,
             name: users[socket.id]
         });
-
     });
-    // if someone leave the chat , let others know
+
+    // if someone disconnects
     socket.on('disconnect', () => {
         socket.broadcast.emit('left', users[socket.id]);
         delete users[socket.id];
     });
 
 });
+
+// just to confirm server is running
+console.log(`Server running on port ${PORT}`);
